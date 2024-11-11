@@ -437,8 +437,8 @@ app.layout = dbc.Container(
     Input("image-width-slider", "value"),
     Input("image-height-slider", "value"),
     Input("image-opacity-slider", "value"),
-    Input("point-size-slider", "value"),  # New input
-    Input("point-opacity-slider", "value"),  # New input
+    Input("point-size-slider", "value"),
+    Input("point-opacity-slider", "value"),
     Input("table", "data_timestamp"),
     State("new-label-name", "value"),
     State("new-label-color", "value"),
@@ -503,19 +503,45 @@ def update_data(
                 )
             )
 
+    # Create a color array for all points at once
+    colors = []
+    for _, row in df_updated.iterrows():
+        label_info = label_manager.labels[row["label"]]
+        colors.append(label_info["color"])
+
+    # Add all points in a single scatter trace
+    fig.add_trace(
+        go.Scatter(
+            x=df_updated["x"],
+            y=df_updated["y"],
+            mode="markers",
+            marker=dict(
+                size=point_size,
+                color=colors,
+                opacity=point_opacity,
+            ),
+            text=[
+                f"{label_manager.labels[label]['name']} ({label})"
+                for label in df_updated["label"]
+            ],
+            hovertemplate="Label: %{text}<br>X: %{x}<br>Y: %{y}<extra></extra>",
+        )
+    )
+
+    # Add a custom legend
     for label_id, label_info in label_manager.labels.items():
-        mask = df_updated["label"] == label_id
         fig.add_trace(
             go.Scatter(
-                x=df_updated[mask]["x"],
-                y=df_updated[mask]["y"],
+                x=[None],
+                y=[None],
                 mode="markers",
                 name=f"{label_info['name']} ({label_id})",
                 marker=dict(
-                    size=point_size,  # Use the slider value
+                    size=point_size,
                     color=label_info["color"],
-                    opacity=point_opacity,  # Use the slider value
+                    opacity=point_opacity,
                 ),
+                showlegend=True,
             )
         )
 
